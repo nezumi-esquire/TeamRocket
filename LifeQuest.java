@@ -26,11 +26,10 @@ public class LifeQuest {
         DialogueHandler dialogueHandler = new DialogueHandler(player, this, ui.getScanner());
         Encounter encounter = new Encounter();
 
-        // Removed while loop - Single encounter handling per call
+ 
         EncounterResult result = encounter.generateEncounter();
         switch (result.getEncounterType()) {
             case COMBAT:
-                    System.out.println("Combat encounter started.");
                     enemyGenerator.refreshEnemyList();
                     Enemy enemy = enemyGenerator.generateEnemy();
 

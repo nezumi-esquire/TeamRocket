@@ -18,10 +18,10 @@ public class Battle {
         while (player.isAlive() && enemy.isAlive() && game.isPlayerPlaying()) {
             displayBattleStatus(enemy);
             SwingUtilities.invokeLater(() -> ui.attackButton.setEnabled(true));
-            synchronized (turnLock) { // Added synchronized block
+            synchronized (turnLock) { 
                 while (isPlayerTurn) {
                     try {
-                        turnLock.wait(); // Wait for notification
+                        turnLock.wait(); 
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     }
@@ -36,12 +36,11 @@ public class Battle {
                 if (!enemy.isAlive()){
                     SwingUtilities.invokeLater(() -> {
                         ui.removeEnemyAndInfoBox();
-                    }); // Remove on EDT
-                    System.out.println("Battle: Enemy defeated. Removing enemy and info box.");
+                    });
                 }
-                break; // Exit loop if game over after player's turn
+                break; 
             }
-            // Set player's turn after checking for game over
+ 
             isPlayerTurn = true;
             if (!player.isAlive() || !enemy.isAlive()) {
                 if (enemy.getHealth() <= 0) {
@@ -52,7 +51,6 @@ public class Battle {
                 break;
             }
         }
-        System.out.println("Exiting battle loop.");
     }
     private void displayBattleStatus(Enemy enemy) {
         TextTyper.typeText("------------------------", 35);
@@ -63,6 +61,7 @@ public class Battle {
     public void playerTurn() {
         int damage = player.getStrength();
         enemy.takeDamage(damage);
+        System.out.println("You attacked for " + damage + " damage!");
         ui.attackButton.setEnabled(false);
         isPlayerTurn = false;
         synchronized (turnLock) {

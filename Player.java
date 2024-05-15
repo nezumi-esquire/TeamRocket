@@ -9,7 +9,7 @@ public class Player {
     public Player(String name) {
         this.name = name;
         this.health = 100;
-        this.strength = 10;
+        this.strength = 3;
         this.maxHealth = 100;
         this.mana = 100;
         this.maxMana = 100;

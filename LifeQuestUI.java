@@ -32,11 +32,11 @@ public class LifeQuestUI extends JFrame {
     public JButton attackButton;
 
     private void run() {
-        // Call runGameLoop repeatedly as long as the player is playing
+ 
         while (game.isPlayerPlaying()) {
-            game.runGameLoop(this, enemyInfoBox); // Removed enemyInfoBox argument
+            game.runGameLoop(this, enemyInfoBox); 
             try {
-                Thread.sleep(100); // Add a small delay to prevent excessive looping
+                Thread.sleep(100); 
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
@@ -373,7 +373,6 @@ public class LifeQuestUI extends JFrame {
         manaBar.setString(manaPercentage + "%");
     }
     public void createEnemyInfoBox(Enemy enemy) {
-        System.out.println("Creating enemy info box for enemy: " + enemy.getName());
         if (layeredPane != null) {
             enemyInfoBox = new EnemyInfoBox();
             skeletonAnimation = new SpriteAnimation("/resources/gifs/skeleton/skelly.gif", 100, 3.5);
@@ -383,7 +382,7 @@ public class LifeQuestUI extends JFrame {
             layeredPane.add(skeletonAnimation, JLayeredPane.PALETTE_LAYER);
 
 
-            enemyInfoBox.setBounds(skeletonAnimation.getX(), skeletonAnimation.getY() - enemyInfoBox.getPreferredSize().height - 10, // Position above the sprite
+            enemyInfoBox.setBounds(skeletonAnimation.getX(), skeletonAnimation.getY() - enemyInfoBox.getPreferredSize().height - 10, 
                     enemyInfoBox.getPreferredSize().width, enemyInfoBox.getPreferredSize().height);
             layeredPane.add(enemyInfoBox, JLayeredPane.PALETTE_LAYER);
             updateEnemyInfoBox(enemy);
@@ -394,7 +393,6 @@ public class LifeQuestUI extends JFrame {
 
 
     public void removeEnemyAndInfoBox() {
-        System.out.println("RemoveEnemyAndInfoBox: Removing enemy info box and enemy sprite");
         SwingWorker<Void, Void> worker = new SwingWorker<Void, Void>() {
             @Override
             protected Void doInBackground() throws Exception {
@@ -411,7 +409,7 @@ public class LifeQuestUI extends JFrame {
             }
             @Override
             protected void done() {
-                if (game.isPlayerPlaying()) { // Only continue the game loop if the player is still playing.
+                if (game.isPlayerPlaying()) { 
                     SwingUtilities.invokeLater(() -> run());
                 }
             }
@@ -422,7 +420,6 @@ public class LifeQuestUI extends JFrame {
         return battle;
     }
     public void updateEnemyInfoBox(Enemy enemy) {
-        System.out.println("Updating enemy info box for: " + enemy.getName());
         if (enemyInfoBox != null) { 
             enemyInfoBox.updateInfo(enemy); 
         } else {
@@ -438,13 +435,13 @@ public class LifeQuestUI extends JFrame {
         new Thread(this::run).start();
     }
     public void setBattle(Battle battle) {
-        this.battle = null; // Clear previous battle reference
+        this.battle = null; 
         this.battle = battle;
         attackButton.setEnabled(false);
 
-        // Now you can add the action listener
+ 
         attackButton.addActionListener(e -> {
-            if (game.isPlayerPlaying() && battle != null && battle.isPlayerTurn) { // Check if battle is still valid
+            if (game.isPlayerPlaying() && battle != null && battle.isPlayerTurn) { 
                 battle.playerTurn();
                 SwingUtilities.invokeLater(() -> updateEnemyInfoBox(battle.getEnemy()));
             }
