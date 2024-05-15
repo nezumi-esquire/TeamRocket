@@ -15,12 +15,9 @@ public class Battle {
         this.enemy = enemy;
     }
     public void runBattleLoop() {
-        System.out.println("Entering battle loop.");
         while (player.isAlive() && enemy.isAlive() && game.isPlayerPlaying()) {
-            SwingUtilities.invokeLater(() -> ui.updateEnemyInfoBox(enemy));
             displayBattleStatus(enemy);
-            System.out.println("isPlayerTurn: " + isPlayerTurn);
-            // Wait for player's turn
+            SwingUtilities.invokeLater(() -> ui.attackButton.setEnabled(true));
             synchronized (turnLock) { // Added synchronized block
                 while (isPlayerTurn) {
                     try {
@@ -30,17 +27,17 @@ public class Battle {
                     }
                 }
             }
-            System.out.println("Player turn ended. Enemy's turn."); // Add this line
 
-            // Enemy's turn ONLY if the game is not over
             if (player.isAlive() && enemy.isAlive() && game.isPlayerPlaying()) {
                 enemyTurn(enemy);
                 TextTyper.typeText("Enemy attacks!", 35);
                 isPlayerTurn = true;
             } else {
                 if (!enemy.isAlive()){
-                    SwingUtilities.invokeLater(() -> ui.removeEnemyAndInfoBox()); // Remove on EDT
-                    System.out.println("Enemy defeated. Removing enemy and info box.");
+                    SwingUtilities.invokeLater(() -> {
+                        ui.removeEnemyAndInfoBox();
+                    }); // Remove on EDT
+                    System.out.println("Battle: Enemy defeated. Removing enemy and info box.");
                 }
                 break; // Exit loop if game over after player's turn
             }
@@ -64,20 +61,17 @@ public class Battle {
         TextTyper.typeText("------------------------", 35);
     }
     public void playerTurn() {
-        TextTyper.typeText("You turn! What will you do?", 35);
         int damage = player.getStrength();
         enemy.takeDamage(damage);
-        System.out.println("Player attacked. Enemy HP: " + enemy.getHealth());
-        System.out.println("isPlayerTurn: " + isPlayerTurn);
+        ui.attackButton.setEnabled(false);
         isPlayerTurn = false;
         synchronized (turnLock) {
-            turnLock.notifyAll(); 
+            turnLock.notifyAll();
         }
     }
     private void enemyTurn(Enemy enemy) {
         int damage = enemy.getStrength();
         player.takeDamage(damage);
-        System.out.println("Enemy attacked. Player HP: " + player.getHealth());
 
         ui.updateHealthBar();
         ui.updateManaBar();

@@ -29,10 +29,18 @@ public class LifeQuestUI extends JFrame {
     JLayeredPane layeredPane;
     SpriteAnimation skeletonAnimation;
     private Battle battle;
-    private JButton attackButton;
+    public JButton attackButton;
 
     private void run() {
-        game.runGameLoop(this, enemyInfoBox);
+        // Call runGameLoop repeatedly as long as the player is playing
+        while (game.isPlayerPlaying()) {
+            game.runGameLoop(this, enemyInfoBox); // Removed enemyInfoBox argument
+            try {
+                Thread.sleep(100); // Add a small delay to prevent excessive looping
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
     }
 
     private static class TextAreaOutputStream extends OutputStream {
@@ -365,8 +373,8 @@ public class LifeQuestUI extends JFrame {
         manaBar.setString(manaPercentage + "%");
     }
     public void createEnemyInfoBox(Enemy enemy) {
+        System.out.println("Creating enemy info box for enemy: " + enemy.getName());
         if (layeredPane != null) {
-            // Reinitialize these components here to create a new enemy info box and sprite every time
             enemyInfoBox = new EnemyInfoBox();
             skeletonAnimation = new SpriteAnimation("/resources/gifs/skeleton/skelly.gif", 100, 3.5);
 
@@ -386,17 +394,29 @@ public class LifeQuestUI extends JFrame {
 
 
     public void removeEnemyAndInfoBox() {
-        SwingUtilities.invokeLater(() -> {
-            if (layeredPane != null) {
-                layeredPane.remove(skeletonAnimation);
-                layeredPane.remove(enemyInfoBox);
-                layeredPane.revalidate();
-                layeredPane.repaint();
-                skeletonAnimation = null;
-                enemyInfoBox = null;
+        System.out.println("RemoveEnemyAndInfoBox: Removing enemy info box and enemy sprite");
+        SwingWorker<Void, Void> worker = new SwingWorker<Void, Void>() {
+            @Override
+            protected Void doInBackground() throws Exception {
+                if (layeredPane != null) {
+                    if (skeletonAnimation != null) layeredPane.remove(skeletonAnimation);
+                    if (enemyInfoBox != null) layeredPane.remove(enemyInfoBox);
+                    layeredPane.revalidate();
+                    layeredPane.repaint();
+                    skeletonAnimation = null;
+                    enemyInfoBox = null;
+                }
+                Thread.sleep(500);
+                return null;
             }
-            battle = null; // Reset battle after removing the enemy
-        });
+            @Override
+            protected void done() {
+                if (game.isPlayerPlaying()) { // Only continue the game loop if the player is still playing.
+                    SwingUtilities.invokeLater(() -> run());
+                }
+            }
+        };
+        worker.execute();
     }
     public Battle getBattle() {
         return battle;
@@ -418,21 +438,15 @@ public class LifeQuestUI extends JFrame {
         new Thread(this::run).start();
     }
     public void setBattle(Battle battle) {
+        this.battle = null; // Clear previous battle reference
         this.battle = battle;
+        attackButton.setEnabled(false);
+
         // Now you can add the action listener
         attackButton.addActionListener(e -> {
-            if (game.isPlayerPlaying() && battle.isPlayerTurn) {
+            if (game.isPlayerPlaying() && battle != null && battle.isPlayerTurn) { // Check if battle is still valid
                 battle.playerTurn();
-                SwingUtilities.invokeLater(() -> updateEnemyInfoBox(battle.getEnemy())); // Update enemy info after the attack
-                if (!battle.getEnemy().isAlive()) {
-                    SwingUtilities.invokeLater(() -> {
-                        removeEnemyAndInfoBox();
-                        // Start the next combat encounter after the UI is updated
-                        run();
-                    });
-                }
-            } else {
-                System.out.println("It's not your turn yet!");
+                SwingUtilities.invokeLater(() -> updateEnemyInfoBox(battle.getEnemy()));
             }
         });
     }

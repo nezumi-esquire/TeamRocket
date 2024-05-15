@@ -25,19 +25,21 @@ public class LifeQuest {
     public void runGameLoop(LifeQuestUI ui, EnemyInfoBox enemyInfoBox) {
         DialogueHandler dialogueHandler = new DialogueHandler(player, this, ui.getScanner());
         Encounter encounter = new Encounter();
-        while (playerIsPlaying) {
-            EncounterResult result = encounter.generateEncounter();
-            switch (result.getEncounterType()) {
-                case COMBAT:
+
+        // Removed while loop - Single encounter handling per call
+        EncounterResult result = encounter.generateEncounter();
+        switch (result.getEncounterType()) {
+            case COMBAT:
                     System.out.println("Combat encounter started.");
                     enemyGenerator.refreshEnemyList();
                     Enemy enemy = enemyGenerator.generateEnemy();
+
                     Battle battle = new Battle(player, this, ui, enemy);
-                    // Move the setBattle call inside SwingUtilities.invokeLater
                     SwingUtilities.invokeLater(() -> {
                         ui.setBattle(battle);
                         ui.createEnemyInfoBox(enemy);
                     });
+
                     battle.runBattleLoop();
                     break;
                 case DIALOGUE:
@@ -54,7 +56,6 @@ public class LifeQuest {
                     break;
                 default:
                     break;
-            }
         }
     }
 }
