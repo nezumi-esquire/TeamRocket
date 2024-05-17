@@ -7,6 +7,7 @@ public class Battle {
     public boolean isPlayerTurn = true;
     public Enemy enemy;
     private final Object turnLock = new Object();
+    public static CharacterAnimation skeletonAnimation;
 
     public Battle(Player player, LifeQuest game, LifeQuestUI ui, Enemy enemy) {
         this.player = player;
@@ -31,17 +32,15 @@ public class Battle {
             if (player.isAlive() && enemy.isAlive() && game.isPlayerPlaying()) {
                 enemyTurn(enemy);
                 TextTyper.typeText("Enemy attacks!", 35);
+                SwingUtilities.invokeLater(() -> ui.skeletonAnimation.startEnemyAttackAnimation(100));
                 isPlayerTurn = true;
             } else {
                 if (!enemy.isAlive()){
-                    SwingUtilities.invokeLater(() -> {
-                        ui.removeEnemyAndInfoBox();
-                    });
+                    System.out.println("You won!");
+                    game.enemyDefeated(ui);
                 }
                 break; 
             }
- 
-            isPlayerTurn = true;
             if (!player.isAlive() || !enemy.isAlive()) {
                 if (enemy.getHealth() <= 0) {
                     TextTyper.typeText("You won!", 35);

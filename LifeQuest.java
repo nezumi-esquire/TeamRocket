@@ -1,31 +1,27 @@
 import javax.swing.*;
 
 public class LifeQuest {
-    private EnemyGenerator enemyGenerator;
-    private Player player;
-    private boolean playerIsPlaying;
-    private SpriteAnimation skeletonAnimation;
-    private SpriteAnimation skeletonAttackAnimation;
-    private JLayeredPane layeredPane;
-
+    private final EnemyGenerator enemyGenerator;
+    private final Player player;
+    private final boolean playerIsPlaying;
     public LifeQuest() {
         player = new Player("Hero");
         enemyGenerator = new EnemyGenerator();
         playerIsPlaying = true;
     }
-
-    public void stopGame() {
-        playerIsPlaying = false;
-    }
-
     public boolean isPlayerPlaying() {
         return playerIsPlaying;
     }
     public Player getPlayer() {
         return player;
     }
-
-    public void runGameLoop(LifeQuestUI ui, EnemyInfoBox enemyInfoBox) {
+    public void enemyDefeated(LifeQuestUI ui) {
+        System.out.println("Enemy defeated!");
+        SwingUtilities.invokeLater(() -> {
+            ui.removeEnemyAndInfoBox();
+        });
+    }
+    public void runGameLoop(LifeQuestUI ui) {
         DialogueHandler dialogueHandler = new DialogueHandler(player, this, ui.getScanner());
         Encounter encounter = new Encounter();
 

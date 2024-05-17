@@ -5,10 +5,9 @@ public class EnemyGenerator {
     private List<Enemy> enemyList = new ArrayList<>();
     public void refreshEnemyList() {
         enemyList.clear();
-        enemyList.add(new Enemy("Skelly", 12, 2, 1));
-        enemyList.add(new Enemy("Beefy Skelly", 18, 1, 2));
-        enemyList.add(new Enemy("Funny Bone", 9, 5, 2));
-        enemyList.add(new Enemy("Wiz", 30, 10, 5));
+        enemyList.add(new Enemy("Skelly", 9, 2, 1));
+        enemyList.add(new Enemy("Beefy Skelly", 24, 1, 2));
+        enemyList.add(new Enemy("Funny Bone", 6, 5, 2));
     }
     public Enemy generateEnemy() {
         return enemyList.get((int) (Math.random() * enemyList.size()));

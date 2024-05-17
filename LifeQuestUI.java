@@ -14,7 +14,7 @@ public class LifeQuestUI extends JFrame {
     JPanel leftPanel, rightPanel;
     private Font customFont;
     private LifeQuest game;
-    SpriteAnimation playerAnimation;
+    CharacterAnimation playerAnimation;
     SpriteAnimation playerAttackAnimation;
     private SpriteAnimation playerRunAnimation;
     private JProgressBar healthBar;
@@ -24,7 +24,7 @@ public class LifeQuestUI extends JFrame {
     private Scanner scanner;
     private EnemyInfoBox enemyInfoBox;
     JLayeredPane layeredPane;
-    SpriteAnimation skeletonAnimation;
+    CharacterAnimation skeletonAnimation;
     SpriteAnimation skeletonAttackAnimation;
     private Battle battle;
     public JButton attackButton;
@@ -32,9 +32,9 @@ public class LifeQuestUI extends JFrame {
     private void run() {
  
         while (game.isPlayerPlaying()) {
-            game.runGameLoop(this, enemyInfoBox); 
+            game.runGameLoop(this);
             try {
-                Thread.sleep(100); 
+                Thread.sleep(4000);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
@@ -107,20 +107,24 @@ public class LifeQuestUI extends JFrame {
             int endRow = 6 - 1; 
             double scaleFactor = 3.0;
             int totalFrames = endCol - startCol + 1;
- 
-            playerAnimation = new SpriteAnimation(spriteSheet, frameWidth, frameHeight, totalFrames, 350, scaleFactor, startCol, startRow, endCol, endRow);
 
-            playerAnimation.setBounds(10, 245, playerAnimation.getIcon().getIconWidth(), playerAnimation.getIcon().getIconHeight());
+            playerAnimation = new CharacterAnimation(
+                    new SpriteAnimation(spriteSheet, frameWidth, frameHeight, totalFrames, 350, scaleFactor, startCol, startRow, endCol, endRow),
+                    layeredPane,
+                    this
+            );
+            playerRunAnimation = new SpriteAnimation("resources/run.gif", 100, 3.0);
+            playerAttackAnimation = new SpriteAnimation("/resources/attack.gif", 100, 3.0);
+
+            playerAnimation.setRunAnimation(playerRunAnimation);
+            playerAnimation.setAttackAnimation(playerAttackAnimation);
+
             playerAnimation.startAnimation();
             playerRunAnimation = new SpriteAnimation("resources/run.gif", 100, 3.0);
-            skeletonAttackAnimation = new SpriteAnimation("/resources/gifs/skeleton/skelly attack.gif", 100, 3.5);
         } catch (IOException e) {
             e.printStackTrace();
         }
 
-
-        layeredPane.add(playerAnimation, JLayeredPane.PALETTE_LAYER);
-        playerAnimation.startAnimation();
         leftPanel.add(layeredPane, BorderLayout.CENTER);
         rightPanel.setLayout(new BorderLayout());
  
@@ -374,12 +378,23 @@ public class LifeQuestUI extends JFrame {
     public void createEnemyInfoBox(Enemy enemy) {
         if (layeredPane != null) {
             enemyInfoBox = new EnemyInfoBox();
-            skeletonAnimation = new SpriteAnimation("/resources/gifs/skeleton/skelly.gif", 100, 3.5);
-            skeletonAnimation.setBounds(325, 240,  skeletonAnimation.getIcon().getIconWidth(), skeletonAnimation.getIcon().getIconHeight());
-            skeletonAnimation.startAnimation();
-            layeredPane.add(skeletonAnimation, JLayeredPane.PALETTE_LAYER);
-            enemyInfoBox.setBounds(skeletonAnimation.getX(), skeletonAnimation.getY() - enemyInfoBox.getPreferredSize().height - 10, 
-                    enemyInfoBox.getPreferredSize().width, enemyInfoBox.getPreferredSize().height);
+            skeletonAnimation = new CharacterAnimation(
+                    new SpriteAnimation("/resources/gifs/skeleton/skelly.gif", 100, 3.5),
+                    layeredPane,
+                    this
+            );
+            skeletonAttackAnimation = new SpriteAnimation("/resources/gifs/skeleton/skelly attack.gif", 100, 3.5);
+            skeletonAnimation.setAttackAnimation(skeletonAttackAnimation);
+
+            skeletonAnimation.getCurrentAnimation().setBounds(325, 240, skeletonAnimation.getCurrentAnimation().getIcon().getIconWidth(), skeletonAnimation.getCurrentAnimation().getIcon().getIconHeight());
+            skeletonAnimation.startEnemyAnimation(325, 240);
+
+            enemyInfoBox.setBounds(
+                    skeletonAnimation.getEnemyX(),
+                    skeletonAnimation.getEnemyY() - enemyInfoBox.getPreferredSize().height - 10,
+                    enemyInfoBox.getPreferredSize().width,
+                    enemyInfoBox.getPreferredSize().height
+            );
             layeredPane.add(enemyInfoBox, JLayeredPane.PALETTE_LAYER);
             updateEnemyInfoBox(enemy);
             leftPanel.revalidate();
@@ -387,12 +402,11 @@ public class LifeQuestUI extends JFrame {
         }
     }
     public void removeEnemyAndInfoBox() {
-        System.out.println("Removing enemy and info box");
         SwingWorker<Void, Void> worker = new SwingWorker<Void, Void>() {
             @Override
             protected Void doInBackground() throws Exception {
                 if (layeredPane != null) {
-                    if (skeletonAnimation != null) layeredPane.remove(skeletonAnimation);
+                    if (skeletonAnimation != null) layeredPane.remove(skeletonAnimation.getCurrentAnimation()); // Remove the current animation
                     if (enemyInfoBox != null) layeredPane.remove(enemyInfoBox);
                     layeredPane.revalidate();
                     layeredPane.repaint();
@@ -431,55 +445,10 @@ public class LifeQuestUI extends JFrame {
         this.battle = null;
         this.battle = battle;
         attackButton.setEnabled(false);
-        playerAttackAnimation = new SpriteAnimation("/resources/attack.gif", 100, 3.0);
         attackButton.addActionListener(e -> {
-            if (game.isPlayerPlaying() && battle != null && battle.isPlayerTurn && playerAttackAnimation != null) {
-                playerAnimation.stopAnimation();
-                layeredPane.remove(playerAnimation);
-                playerRunAnimation.setBounds(playerAnimation.getX(), playerAnimation.getY(), playerRunAnimation.getIcon().getIconWidth(), playerRunAnimation.getIcon().getIconHeight());
-                layeredPane.add(playerRunAnimation, JLayeredPane.PALETTE_LAYER);
-                layeredPane.revalidate();
-                layeredPane.repaint();
-                playerRunAnimation.startAnimation();
-                int targetX = skeletonAnimation.getX() - 100;
-                int playerSpeed = 5;
-                final boolean[] attackPerformed = {false};
-                Timer moveTimer = new Timer(30, event -> {
-                    int currentX = playerRunAnimation.getX();
-                    if (currentX < targetX) {
-                        playerRunAnimation.setLocation(currentX + playerSpeed, playerRunAnimation.getY());
-                    } else if (!attackPerformed[0]) {
-                        playerRunAnimation.stopAnimation();
-                        layeredPane.remove(playerRunAnimation);
-                        playerAttackAnimation.setBounds(playerRunAnimation.getX(), playerRunAnimation.getY(), playerAttackAnimation.getIcon().getIconWidth(), playerAttackAnimation.getIcon().getIconHeight());
-                        layeredPane.add(playerAttackAnimation, JLayeredPane.PALETTE_LAYER);
-                        layeredPane.revalidate();
-                        layeredPane.repaint();
-                        playerAttackAnimation.startAnimation();
-                        attackPerformed[0] = true; 
-                        battle.playerTurn();
-                        SwingUtilities.invokeLater(() -> updateEnemyInfoBox(battle.getEnemy()));
-                        Timer attackTimer = new Timer(100, new ActionListener() {
-                            int attackFrameCount = 0;
-                            @Override
-                            public void actionPerformed(ActionEvent e) {
-                                if (attackFrameCount >= playerAttackAnimation.frames.size()) {
-                                    ((Timer) e.getSource()).stop();
-                                    playerAttackAnimation.stopAnimation();
-                                    layeredPane.remove(playerAttackAnimation);
-                                    layeredPane.add(playerAnimation, JLayeredPane.PALETTE_LAYER);
-                                    layeredPane.revalidate();
-                                    layeredPane.repaint();
-                                    playerAnimation.startAnimation();
-                                }
-                                attackFrameCount++;
-                            }
-                        });
-                        attackTimer.start();
-                        ((Timer) event.getSource()).stop();
-                    }
-                });
-                moveTimer.start();
+            if (game.isPlayerPlaying() && battle != null && battle.isPlayerTurn) {
+                System.out.println("Attacking");
+                playerAnimation.startRunAnimation(skeletonAnimation.getX() - 100); // Initiate the run and attack sequence
             }
         });
     }

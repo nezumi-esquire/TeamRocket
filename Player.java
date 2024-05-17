@@ -2,7 +2,7 @@ public class Player {
     private String name;
     private int health;
     private int strength;
-    private int maxHealth;
+    private final int maxHealth;
     private int mana;
     private int maxMana;
     
@@ -18,10 +18,7 @@ public class Player {
     public boolean isAlive() {
         return health > 0;
     }
-    
-    public String getName() {
-        return name;
-    }
+
     public int getHealth() {
         return health;
     }
@@ -34,10 +31,6 @@ public class Player {
     }
     public int getMaxMana() {
         return maxMana;
-    }
-
-    public void setName(String name) {
-        this.name = name;
     }
     
     public void setHealth(int health) {
