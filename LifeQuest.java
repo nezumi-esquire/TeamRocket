@@ -4,6 +4,9 @@ public class LifeQuest {
     private EnemyGenerator enemyGenerator;
     private Player player;
     private boolean playerIsPlaying;
+    private SpriteAnimation skeletonAnimation;
+    private SpriteAnimation skeletonAttackAnimation;
+    private JLayeredPane layeredPane;
 
     public LifeQuest() {
         player = new Player("Hero");
