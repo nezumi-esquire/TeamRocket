@@ -1,4 +1,6 @@
 import javax.swing.*;
+import java.util.*;
+import java.util.Timer;
 
 public class Battle {
     private Player player;
@@ -8,6 +10,7 @@ public class Battle {
     public Enemy enemy;
     private final Object turnLock = new Object();
     public static CharacterAnimation skeletonAnimation;
+    private static final int TURN_DELAY = 2000;
 
     public Battle(Player player, LifeQuest game, LifeQuestUI ui, Enemy enemy) {
         this.player = player;
@@ -30,9 +33,17 @@ public class Battle {
             }
 
             if (player.isAlive() && enemy.isAlive() && game.isPlayerPlaying()) {
-                enemyTurn(enemy);
-                TextTyper.typeText("Enemy attacks!", 35);
-                SwingUtilities.invokeLater(() -> ui.skeletonAnimation.startEnemyAttackAnimation(100));
+                Timer turnDelayTimer = new Timer();
+                TimerTask turnDelayTask = new TimerTask() {
+                    @Override
+                    public void run() {
+                        SwingUtilities.invokeLater(() -> {
+                            enemyTurn(enemy);
+                            ui.skeletonAnimation.startEnemyWalkAnimation(ui.playerAnimation.getX() + 100); // Start the walk animation
+                        });
+                    }
+                };
+                turnDelayTimer.schedule(turnDelayTask, TURN_DELAY);
                 isPlayerTurn = true;
             } else {
                 if (!enemy.isAlive()){
@@ -61,6 +72,13 @@ public class Battle {
         int damage = player.getStrength();
         enemy.takeDamage(damage);
         System.out.println("You attacked for " + damage + " damage!");
+        SwingUtilities.invokeLater(() -> {
+            if (enemy.getHealth() <= 0) {
+                ui.skeletonAnimation.playDeathAnimation();
+            } else {
+                ui.skeletonAnimation.playHurtAnimation(0);
+            }
+        });
         ui.attackButton.setEnabled(false);
         isPlayerTurn = false;
         synchronized (turnLock) {
@@ -70,7 +88,13 @@ public class Battle {
     private void enemyTurn(Enemy enemy) {
         int damage = enemy.getStrength();
         player.takeDamage(damage);
-
+        Timer hurtDelayTimer = new Timer();
+        hurtDelayTimer.schedule(new TimerTask() {
+            @Override
+            public void run() {
+                SwingUtilities.invokeLater(() -> ui.playerAnimation.playHurtAnimation(0));
+            }
+        }, 3000);
         ui.updateHealthBar();
         ui.updateManaBar();
         isPlayerTurn = true;

@@ -25,10 +25,13 @@ public class LifeQuestUI extends JFrame {
     private EnemyInfoBox enemyInfoBox;
     JLayeredPane layeredPane;
     CharacterAnimation skeletonAnimation;
+    SpriteAnimation EnemyWalkAnimation;
     SpriteAnimation skeletonAttackAnimation;
     private Battle battle;
     public JButton attackButton;
-
+    SpriteAnimation playerHurtAnimation;
+    SpriteAnimation skeletonHurtAnimation;
+    SpriteAnimation skeletonDeathAnimation;
     private void run() {
  
         while (game.isPlayerPlaying()) {
@@ -113,14 +116,18 @@ public class LifeQuestUI extends JFrame {
                     layeredPane,
                     this
             );
-            playerRunAnimation = new SpriteAnimation("resources/run.gif", 100, 3.0);
             playerAttackAnimation = new SpriteAnimation("/resources/attack.gif", 100, 3.0);
+            playerRunAnimation = new SpriteAnimation("resources/run.gif", 100, 3.0);
+            playerHurtAnimation = new SpriteAnimation("resources/hurt.gif", 100, 3.0);
+
+            playerAnimation.setHurtAnimation(playerHurtAnimation);
+
+
 
             playerAnimation.setRunAnimation(playerRunAnimation);
             playerAnimation.setAttackAnimation(playerAttackAnimation);
 
             playerAnimation.startAnimation();
-            playerRunAnimation = new SpriteAnimation("resources/run.gif", 100, 3.0);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -378,16 +385,30 @@ public class LifeQuestUI extends JFrame {
     public void createEnemyInfoBox(Enemy enemy) {
         if (layeredPane != null) {
             enemyInfoBox = new EnemyInfoBox();
+            JPanel enemyPanel = new JPanel(null); // Use null layout for absolute positioning
+            enemyPanel.setOpaque(false); // Make it transparent so the background shows through
+            final int ENEMY_X = 325;
+            final int ENEMY_Y = 240;
+            final int ENEMY_WIDTH = 100;
+            final int ENEMY_HEIGHT = 100;
+            enemyPanel.setBounds(ENEMY_X, ENEMY_Y, ENEMY_WIDTH, ENEMY_HEIGHT);
             skeletonAnimation = new CharacterAnimation(
                     new SpriteAnimation("/resources/gifs/skeleton/skelly.gif", 100, 3.5),
                     layeredPane,
                     this
             );
             skeletonAttackAnimation = new SpriteAnimation("/resources/gifs/skeleton/skelly attack.gif", 100, 3.5);
+            EnemyWalkAnimation = new SpriteAnimation("/resources/gifs/skeleton/skelly walk.gif", 100, 3.5);
+            skeletonHurtAnimation = new SpriteAnimation("/resources/gifs/skeleton/skelly hurt.gif", 100, 3.5);
+            skeletonDeathAnimation = new SpriteAnimation("/resources/gifs/skeleton/skelly death.gif", 100, 3.5);
+
             skeletonAnimation.setAttackAnimation(skeletonAttackAnimation);
+            skeletonAnimation.setEnemyWalkAnimation(EnemyWalkAnimation);
+            skeletonAnimation.setHurtAnimation(skeletonHurtAnimation);
+            skeletonAnimation.setDeathAnimation(skeletonDeathAnimation);
 
             skeletonAnimation.getCurrentAnimation().setBounds(325, 240, skeletonAnimation.getCurrentAnimation().getIcon().getIconWidth(), skeletonAnimation.getCurrentAnimation().getIcon().getIconHeight());
-            skeletonAnimation.startEnemyAnimation(325, 240);
+            skeletonAnimation.startEnemyAnimation(300, 240);
 
             enemyInfoBox.setBounds(
                     skeletonAnimation.getEnemyX(),
@@ -447,8 +468,7 @@ public class LifeQuestUI extends JFrame {
         attackButton.setEnabled(false);
         attackButton.addActionListener(e -> {
             if (game.isPlayerPlaying() && battle != null && battle.isPlayerTurn) {
-                System.out.println("Attacking");
-                playerAnimation.startRunAnimation(skeletonAnimation.getX() - 100); // Initiate the run and attack sequence
+                playerAnimation.startRunAnimation(skeletonAnimation.getEnemyX() - 100); // Initiate the run and attack sequence
             }
         });
     }

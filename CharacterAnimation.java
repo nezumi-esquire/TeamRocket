@@ -14,8 +14,11 @@ public class CharacterAnimation {
     private boolean isAttacking;
     private SpriteAnimation runAnimation;
     private SpriteAnimation attackAnimation;
+    private SpriteAnimation hurtAnimation;
     private Battle battle;
     private static final int GROUND_LEVEL_Y = 245;
+    private SpriteAnimation EnemyWalkAnimation;
+    private SpriteAnimation deathAnimation;
 
     public CharacterAnimation(SpriteAnimation animation, JLayeredPane layeredPane, LifeQuestUI ui) {
         this.animation = animation;
@@ -44,7 +47,18 @@ public class CharacterAnimation {
     public void setAttackAnimation(SpriteAnimation attackAnimation) {
         this.attackAnimation = attackAnimation;
     }
-
+    public void setEnemyWalkAnimation(SpriteAnimation EnemyWalkAnimation) {
+        this.EnemyWalkAnimation = EnemyWalkAnimation;
+    }
+    public void setAnimation(SpriteAnimation animation) {
+        this.animation = animation;
+    }
+    public void setHurtAnimation(SpriteAnimation hurtAnimation) {
+        this.hurtAnimation = hurtAnimation;
+    }
+    public void setDeathAnimation(SpriteAnimation deathAnimation) {
+        this.deathAnimation = deathAnimation;
+    }
     public void startRunAnimation(int targetX) {
         if (!isRunning && runAnimation != null) {
             isRunning = true;
@@ -109,12 +123,109 @@ public class CharacterAnimation {
     public void resetToIdleAnimation() {
         isRunning = false;
         isAttacking = false;
+        if (layeredPane.isAncestorOf(hurtAnimation)) {
+            hurtAnimation.stopAnimation();
+            layeredPane.remove(hurtAnimation);
+        }
+        if (!layeredPane.isAncestorOf(animation)) {
+            layeredPane.add(animation, JLayeredPane.PALETTE_LAYER);
+        }
         attackAnimation.stopAnimation();
         layeredPane.remove(attackAnimation);
-        layeredPane.add(animation, JLayeredPane.PALETTE_LAYER);
         layeredPane.revalidate();
         layeredPane.repaint();
         animation.startAnimation();
+    }
+    public void startEnemyWalkAnimation(int targetX) {
+        if (!isRunning && EnemyWalkAnimation != null) {
+            isRunning = true;
+            animation.stopAnimation();
+            layeredPane.remove(animation);
+
+            EnemyWalkAnimation.setBounds(animation.getX(), animation.getY(), EnemyWalkAnimation.getIcon().getIconWidth(), EnemyWalkAnimation.getIcon().getIconHeight());
+            layeredPane.add(EnemyWalkAnimation, JLayeredPane.PALETTE_LAYER);
+            layeredPane.revalidate();
+            layeredPane.repaint();
+            EnemyWalkAnimation.startAnimation();
+
+            int enemySpeed = 4; // Adjust the enemy's movement speed
+            Timer moveTimer = new Timer();
+            TimerTask moveTask = new TimerTask() {
+                @Override
+                public void run() {
+                    int currentX = EnemyWalkAnimation.getX();
+                    if (currentX > targetX) {
+                        EnemyWalkAnimation.setLocation(currentX - enemySpeed, y);
+                    } else {
+                        EnemyWalkAnimation.stopAnimation();
+                        layeredPane.remove(EnemyWalkAnimation);
+                        startEnemyAttackAnimation(100); // Start attack animation after reaching the player
+                        moveTimer.cancel();
+                    }
+                }
+            };
+            moveTimer.scheduleAtFixedRate(moveTask, 0, 30);
+        }
+    }
+    public void playHurtAnimation(int delay) {
+        Timer hurtDelayTimer = new Timer();
+        TimerTask hurtDelayTask = new TimerTask() {
+            @Override
+            public void run() {
+                if (animation != null && hurtAnimation != null) {
+                    animation.stopAnimation();
+                    layeredPane.remove(animation);
+                    hurtAnimation.setBounds(animation.getX(), animation.getY(), hurtAnimation.getIcon().getIconWidth(), hurtAnimation.getIcon().getIconHeight());
+                    layeredPane.add(hurtAnimation, JLayeredPane.PALETTE_LAYER);
+
+                    if (!layeredPane.isAncestorOf(hurtAnimation)) {
+                        hurtAnimation.setBounds(animation.getX(), animation.getY(), hurtAnimation.getIcon().getIconWidth(), hurtAnimation.getIcon().getIconHeight());
+                        layeredPane.add(hurtAnimation, JLayeredPane.PALETTE_LAYER);
+                    }
+                    hurtAnimation.startAnimation();
+
+                    // Timer for the hurt animation duration
+                    Timer hurtTimer = new Timer();
+                    TimerTask hurtTask = new TimerTask() {
+                        int hurtFrameCount = 0;
+
+                        @Override
+                        public void run() {
+                            if (hurtFrameCount >= hurtAnimation.frames.size()) {
+                                hurtTimer.cancel();
+                                resetToIdleAnimation(); // Return to idle after the hurt animation
+                            }
+                            hurtFrameCount++;
+                        }
+                    };
+
+                    hurtTimer.scheduleAtFixedRate(hurtTask, 0, 100); // Adjust timing as needed
+                }
+            }
+        };
+        hurtDelayTimer.schedule(hurtDelayTask, delay);
+    }
+    public void playDeathAnimation() {
+        if (animation != null && deathAnimation != null) {
+            animation.stopAnimation();
+            layeredPane.remove(animation);
+            deathAnimation.setBounds(animation.getX(), animation.getY(), deathAnimation.getIcon().getIconWidth(), deathAnimation.getIcon().getIconHeight());
+            layeredPane.add(deathAnimation, JLayeredPane.PALETTE_LAYER);
+            deathAnimation.startAnimation();
+
+            // Timer to remove the death animation after it finishes
+            Timer deathTimer = new Timer();
+            TimerTask deathTask = new TimerTask() {
+                @Override
+                public void run() {
+                    deathAnimation.stopAnimation();
+                    layeredPane.remove(deathAnimation);
+                    layeredPane.revalidate();
+                    layeredPane.repaint();
+                }
+            };
+            deathTimer.schedule(deathTask, deathAnimation.timer.getDelay() * deathAnimation.frames.size()); // Schedule the timer to run once after the animation duration
+        }
     }
     public void startEnemyAttackAnimation(int delay) {
         Timer attackDelayTimer = new Timer();
@@ -125,8 +236,10 @@ public class CharacterAnimation {
                     animation.stopAnimation();
                     layeredPane.remove(animation);
                     if (!layeredPane.isAncestorOf(attackAnimation)) {
+                        int xOffset = (animation.getIcon().getIconWidth() - attackAnimation.getIcon().getIconWidth()) / 2;
+                        int yOffset = (animation.getIcon().getIconHeight() - attackAnimation.getIcon().getIconHeight()) / 2;
                         attackAnimation.setBounds(
-                                animation.getX(), animation.getY(),
+                                EnemyWalkAnimation.getX() + xOffset, EnemyWalkAnimation.getY() + yOffset,
                                 attackAnimation.getIcon().getIconWidth(),
                                 attackAnimation.getIcon().getIconHeight()
                         );
@@ -159,6 +272,7 @@ public class CharacterAnimation {
         animation.startAnimation();
         layeredPane.add(animation, JLayeredPane.PALETTE_LAYER);
     }
+
     public int getX() {
         return x;
     }

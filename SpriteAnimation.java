@@ -10,7 +10,7 @@ import java.util.List;
 public class SpriteAnimation extends JLabel {
     public List<ImageIcon> frames = new ArrayList<>();
     public int currentFrame = 0;
-    private Timer timer;
+    public Timer timer;
     private int maxWidth = 0;
     private int maxHeight = 0;
     boolean isRunning = false;
