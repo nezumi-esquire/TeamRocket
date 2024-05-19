@@ -13,9 +13,11 @@ public class SpriteAnimation extends JLabel {
     public Timer timer;
     private int maxWidth = 0;
     private int maxHeight = 0;
+    private String gifPath;
     boolean isRunning = false;
 
     public SpriteAnimation(String gifPath, int delay, double scaleFactor) {
+        this.gifPath = gifPath;
         this.timer = new Timer(delay, e -> {
             currentFrame = (currentFrame + 1) % frames.size();
             setIcon(frames.get(currentFrame));
@@ -97,5 +99,8 @@ public class SpriteAnimation extends JLabel {
 
     public void stopAnimation() {
         timer.stop();
+    }
+    public String getGifPath(){
+        return gifPath;
     }
 }

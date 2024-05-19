@@ -7,6 +7,7 @@ public class Enemy {
     private int strength;
     private int maxHealth;
     private int level;
+    private CharacterAnimation animationSet;
     
     public Enemy(String name, int health, int strength, int level){
         this.name = name;
@@ -14,6 +15,11 @@ public class Enemy {
         this.strength = strength;
         this.maxHealth = maxHealth;
         this.level = level;
+        this.animationSet = null;
+    }
+    public Enemy(String name, int health, int strength, int level, CharacterAnimation animationSet) {
+        this(name, health, strength, level); // Call the existing constructor
+        this.animationSet = animationSet;
     }
     public boolean isAlive() { 
         return health > 0;
@@ -41,6 +47,9 @@ public class Enemy {
     if (health < 0) { 
         health = 0;
         }
+    }
+    public CharacterAnimation getAnimationSet() {
+        return animationSet;
     }
 }
 

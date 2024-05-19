@@ -32,6 +32,7 @@ public class LifeQuestUI extends JFrame {
     SpriteAnimation playerHurtAnimation;
     SpriteAnimation skeletonHurtAnimation;
     SpriteAnimation skeletonDeathAnimation;
+    private EnemyGenerator enemyGenerator;
     private void run() {
  
         while (game.isPlayerPlaying()) {
@@ -57,9 +58,12 @@ public class LifeQuestUI extends JFrame {
             textArea.setCaretPosition(textArea.getDocument().getLength()); 
         }
     }
+    public EnemyGenerator getEnemyGenerator() {
+        return enemyGenerator;
+    }
 
-    public LifeQuestUI(LifeQuest game, Player player) {
-        this.game = game;
+    public LifeQuestUI(Player player) {
+        this.game = new LifeQuest(layeredPane, this);
         this.scanner = new Scanner(System.in);
         this.maxPlayerHealth = player.getHealth();
         this.maxPlayerMana = player.getMana();
@@ -69,7 +73,7 @@ public class LifeQuestUI extends JFrame {
         } catch (Exception e) {
             e.printStackTrace();
         }
-        ImageIcon backgroundIcon = new ImageIcon(getClass().getResource("resources/bg-night.png"));
+        ImageIcon backgroundIcon = new ImageIcon(getClass().getResource("resources/bg-green.png"));
 
         setTitle("LifeQuest"); 
         setSize(1024, 514); 
@@ -99,6 +103,8 @@ public class LifeQuestUI extends JFrame {
 
         layeredPane = new JLayeredPane();
         layeredPane.setPreferredSize(leftPanel.getPreferredSize());
+        enemyGenerator = new EnemyGenerator(layeredPane, this);
+        enemyGenerator.refreshEnemyList();
         try {
             BufferedImage spriteSheet = ImageIO.read(getClass().getResource("/resources/playerSheet.png"));
 
@@ -369,6 +375,7 @@ public class LifeQuestUI extends JFrame {
 
         updateHealthBar();
         updateManaBar();
+        this.game = new LifeQuest(layeredPane, this);
     }
     public void updateHealthBar() {
         int currentHealth = game.getPlayer().getHealth();
@@ -385,41 +392,29 @@ public class LifeQuestUI extends JFrame {
     public void createEnemyInfoBox(Enemy enemy) {
         if (layeredPane != null) {
             enemyInfoBox = new EnemyInfoBox();
-            JPanel enemyPanel = new JPanel(null); // Use null layout for absolute positioning
-            enemyPanel.setOpaque(false); // Make it transparent so the background shows through
-            final int ENEMY_X = 325;
-            final int ENEMY_Y = 240;
-            final int ENEMY_WIDTH = 100;
-            final int ENEMY_HEIGHT = 100;
-            enemyPanel.setBounds(ENEMY_X, ENEMY_Y, ENEMY_WIDTH, ENEMY_HEIGHT);
-            skeletonAnimation = new CharacterAnimation(
-                    new SpriteAnimation("/resources/gifs/skeleton/skelly.gif", 100, 3.5),
-                    layeredPane,
-                    this
-            );
-            skeletonAttackAnimation = new SpriteAnimation("/resources/gifs/skeleton/skelly attack.gif", 100, 3.5);
-            EnemyWalkAnimation = new SpriteAnimation("/resources/gifs/skeleton/skelly walk.gif", 100, 3.5);
-            skeletonHurtAnimation = new SpriteAnimation("/resources/gifs/skeleton/skelly hurt.gif", 100, 3.5);
-            skeletonDeathAnimation = new SpriteAnimation("/resources/gifs/skeleton/skelly death.gif", 100, 3.5);
+            CharacterAnimation enemyAnimation = enemy.getAnimationSet();
+            if (enemyAnimation != null) {
 
-            skeletonAnimation.setAttackAnimation(skeletonAttackAnimation);
-            skeletonAnimation.setEnemyWalkAnimation(EnemyWalkAnimation);
-            skeletonAnimation.setHurtAnimation(skeletonHurtAnimation);
-            skeletonAnimation.setDeathAnimation(skeletonDeathAnimation);
+                // Calculate offsets for the info box position
+                int offsetX = 0;
+                int offsetY = 0;
+                if (enemy.getName().equals("Slime")) {
+                    offsetX = -50; // Adjust for Slime (example values)
+                    offsetY = -20;
+                }
+                enemyAnimation.startEnemyAnimation(300, 240, offsetX, offsetY);
 
-            skeletonAnimation.getCurrentAnimation().setBounds(325, 240, skeletonAnimation.getCurrentAnimation().getIcon().getIconWidth(), skeletonAnimation.getCurrentAnimation().getIcon().getIconHeight());
-            skeletonAnimation.startEnemyAnimation(300, 240);
+                enemyInfoBox.setBounds(
+                        300, 180,
+                        enemyInfoBox.getPreferredSize().width,
+                        enemyInfoBox.getPreferredSize().height
+                );
 
-            enemyInfoBox.setBounds(
-                    skeletonAnimation.getEnemyX(),
-                    skeletonAnimation.getEnemyY() - enemyInfoBox.getPreferredSize().height - 10,
-                    enemyInfoBox.getPreferredSize().width,
-                    enemyInfoBox.getPreferredSize().height
-            );
-            layeredPane.add(enemyInfoBox, JLayeredPane.PALETTE_LAYER);
-            updateEnemyInfoBox(enemy);
-            leftPanel.revalidate();
-            leftPanel.repaint();
+                layeredPane.add(enemyInfoBox, JLayeredPane.PALETTE_LAYER);
+                updateEnemyInfoBox(enemy);
+                leftPanel.revalidate();
+                leftPanel.repaint();
+            }
         }
     }
     public void removeEnemyAndInfoBox() {
@@ -468,14 +463,17 @@ public class LifeQuestUI extends JFrame {
         attackButton.setEnabled(false);
         attackButton.addActionListener(e -> {
             if (game.isPlayerPlaying() && battle != null && battle.isPlayerTurn) {
-                playerAnimation.startRunAnimation(skeletonAnimation.getEnemyX() - 100); // Initiate the run and attack sequence
+                CharacterAnimation enemyAnimation = battle.getEnemy().getAnimationSet();
+                if (enemyAnimation != null) {
+                    int targetX = enemyAnimation.getEnemyX() - 100;  // Calculate targetX based on enemy's actual position
+                    playerAnimation.startRunAnimation(targetX);
+                }
             }
         });
     }
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> {
-            LifeQuest game = new LifeQuest();
-            LifeQuestUI ui = new LifeQuestUI(game, game.getPlayer());
+            LifeQuestUI ui = new LifeQuestUI(new Player("Hero"));
             ui.setVisible(true);
             ui.startGameLoop(); 
         });

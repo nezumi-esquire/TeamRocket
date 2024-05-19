@@ -9,7 +9,7 @@ public class Battle {
     public boolean isPlayerTurn = true;
     public Enemy enemy;
     private final Object turnLock = new Object();
-    public static CharacterAnimation skeletonAnimation;
+    public static CharacterAnimation enemyAnimation;
     private static final int TURN_DELAY = 2000;
 
     public Battle(Player player, LifeQuest game, LifeQuestUI ui, Enemy enemy) {
@@ -17,6 +17,7 @@ public class Battle {
         this.game = game;
         this.ui = ui;
         this.enemy = enemy;
+        this.enemyAnimation = enemy.getAnimationSet();
     }
     public void runBattleLoop() {
         while (player.isAlive() && enemy.isAlive() && game.isPlayerPlaying()) {
@@ -39,7 +40,7 @@ public class Battle {
                     public void run() {
                         SwingUtilities.invokeLater(() -> {
                             enemyTurn(enemy);
-                            ui.skeletonAnimation.startEnemyWalkAnimation(ui.playerAnimation.getX() + 100); // Start the walk animation
+                            enemyAnimation.startEnemyWalkAnimation(ui.playerAnimation.getX() + 100); // Start the walk animation
                         });
                     }
                 };
@@ -74,9 +75,12 @@ public class Battle {
         System.out.println("You attacked for " + damage + " damage!");
         SwingUtilities.invokeLater(() -> {
             if (enemy.getHealth() <= 0) {
-                ui.skeletonAnimation.playDeathAnimation();
+                enemyAnimation.playDeathAnimation();
+                game.enemyDefeated(ui);
+                return;
             } else {
-                ui.skeletonAnimation.playHurtAnimation(0);
+                System.out.println("Enemy Attack Animation Started");
+                enemyAnimation.playHurtAnimation(0);
             }
         });
         ui.attackButton.setEnabled(false);

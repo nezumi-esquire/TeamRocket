@@ -1,12 +1,12 @@
 import javax.swing.*;
 
 public class LifeQuest {
-    private final EnemyGenerator enemyGenerator;
+    private EnemyGenerator enemyGenerator;
     private final Player player;
     private final boolean playerIsPlaying;
-    public LifeQuest() {
+    public LifeQuest(JLayeredPane layeredPane, LifeQuestUI ui) {
         player = new Player("Hero");
-        enemyGenerator = new EnemyGenerator();
+        enemyGenerator = new EnemyGenerator(layeredPane, ui);
         playerIsPlaying = true;
     }
     public boolean isPlayerPlaying() {
