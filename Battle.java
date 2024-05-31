@@ -1,27 +1,25 @@
 import javax.swing.*;
 import java.util.*;
 import java.util.Timer;
-
 public class Battle {
     private Player player;
     private LifeQuest game;
     private LifeQuestUI ui;
     public boolean isPlayerTurn = true;
-    public Enemy enemy;
+    public Map<String, Object> enemyData;
     private final Object turnLock = new Object();
-    public static CharacterAnimation enemyAnimation;
     private static final int TURN_DELAY = 2000;
-
-    public Battle(Player player, LifeQuest game, LifeQuestUI ui, Enemy enemy) {
+    private HashMap<String, CharacterAnimation> enemyAnimations;
+    public Battle(Player player, LifeQuest game, LifeQuestUI ui, Map<String, Object> enemyData, CharacterAnimation enemyAnimation) {
         this.player = player;
         this.game = game;
         this.ui = ui;
-        this.enemy = enemy;
-        this.enemyAnimation = enemy.getAnimationSet();
+        this.enemyData = enemyData;
     }
     public void runBattleLoop() {
-        while (player.isAlive() && enemy.isAlive() && game.isPlayerPlaying()) {
-            displayBattleStatus(enemy);
+        displayBattleStatus();
+        while (player.isAlive() && (int) enemyData.get("health") > 0 && game.isPlayerPlaying()) {
+
             SwingUtilities.invokeLater(() -> ui.attackButton.setEnabled(true));
             synchronized (turnLock) { 
                 while (isPlayerTurn) {
@@ -32,54 +30,52 @@ public class Battle {
                     }
                 }
             }
-
-            if (player.isAlive() && enemy.isAlive() && game.isPlayerPlaying()) {
+            String enemyName = (String) enemyData.get("name");
+            CharacterAnimation enemyAnimation = enemyAnimations.get(enemyName);
+            if (player.isAlive() && (int) enemyData.get("health") > 0 && game.isPlayerPlaying()) {
                 Timer turnDelayTimer = new Timer();
                 TimerTask turnDelayTask = new TimerTask() {
                     @Override
                     public void run() {
                         SwingUtilities.invokeLater(() -> {
-                            enemyTurn(enemy);
-                            enemyAnimation.startEnemyWalkAnimation(ui.playerAnimation.getX() + 100); // Start the walk animation
+                            enemyTurn();
+                            enemyAnimation.startEnemyWalkAnimation(ui.playerAnimation.getX() + 100);
                         });
                     }
                 };
                 turnDelayTimer.schedule(turnDelayTask, TURN_DELAY);
                 isPlayerTurn = true;
             } else {
-                if (!enemy.isAlive()){
+                if ( (int) enemyData.get("health") <= 0){
+                    enemyDefeated(ui);
                     System.out.println("You won!");
                     game.enemyDefeated(ui);
                 }
                 break; 
             }
-            if (!player.isAlive() || !enemy.isAlive()) {
-                if (enemy.getHealth() <= 0) {
-                    TextTyper.typeText("You won!", 35);
-                } else {
-                    TextTyper.typeText("You lost!", 35);
-                }
-                break;
-            }
         }
     }
-    private void displayBattleStatus(Enemy enemy) {
+    private void displayBattleStatus() {
         TextTyper.typeText("------------------------", 35);
-        TextTyper.typeText("Enemy: " + enemy.getName(), 35);
-        TextTyper.typeText(enemy.getName() + " HP: " + enemy.getHealth(), 35);
+        TextTyper.typeText("Enemy: " + enemyData.get("name"), 35);
+        TextTyper.typeText(enemyData.get("name") + " HP: " + enemyData.get("health"), 35);
         TextTyper.typeText("------------------------", 35);
     }
     public void playerTurn() {
         int damage = player.getStrength();
-        enemy.takeDamage(damage);
+        int currentHealth = (int) enemyData.get("health");
+        currentHealth -= damage;
+        enemyData.put("health", currentHealth);
         System.out.println("You attacked for " + damage + " damage!");
+        String enemyName = (String) enemyData.get("name");
+
+        CharacterAnimation enemyAnimation = enemyAnimations.get(enemyName);
         SwingUtilities.invokeLater(() -> {
-            if (enemy.getHealth() <= 0) {
+            if ((int)enemyData.get("health") <= 0) {
                 enemyAnimation.playDeathAnimation();
                 game.enemyDefeated(ui);
                 return;
             } else {
-                System.out.println("Enemy Attack Animation Started");
                 enemyAnimation.playHurtAnimation(0);
             }
         });
@@ -89,8 +85,8 @@ public class Battle {
             turnLock.notifyAll();
         }
     }
-    private void enemyTurn(Enemy enemy) {
-        int damage = enemy.getStrength();
+    private void enemyTurn() {
+        int damage = (int) enemyData.get("strength");
         player.takeDamage(damage);
         Timer hurtDelayTimer = new Timer();
         hurtDelayTimer.schedule(new TimerTask() {
@@ -103,8 +99,18 @@ public class Battle {
         ui.updateManaBar();
         isPlayerTurn = true;
     }
-
-    public Enemy getEnemy() {
-        return enemy;
+    public Map<String, Object> getEnemyData() {
+        return enemyData;
+    }
+    public void setEnemyAnimations(HashMap<String,CharacterAnimation> enemyAnimations) {
+        this.enemyAnimations = enemyAnimations;
+    }
+    public void enemyDefeated(LifeQuestUI ui){
+        player.gainExperience(15);
+        if (enemyData.get("name").equals("Mr. Slime")){
+            player.gainExperience(8);
+        }
+        ui.removeEnemyAndInfoBox();
+        ui.updateLevelBar();
     }
 }

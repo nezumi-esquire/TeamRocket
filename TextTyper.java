@@ -1,5 +1,4 @@
-import java.util.concurrent.TimeUnit;
-
+import java.util.concurrent.TimeUnit; 
 public class TextTyper {
     public static void typeText(String text, long delayMillis) {
         for (char c : text.toCharArray()) {

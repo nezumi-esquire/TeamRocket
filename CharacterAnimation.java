@@ -2,51 +2,53 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Timer;
-import java.util.TimerTask;
-
+import java.util.TimerTask; 
 public class CharacterAnimation {
-    private SpriteAnimation animation;
+    public SpriteAnimation animation;
     private JLayeredPane layeredPane;
     private LifeQuestUI ui;
     private int x, y;
     private boolean isRunning;
     private boolean isAttacking;
-    private SpriteAnimation runAnimation;
-    private SpriteAnimation attackAnimation;
-    private SpriteAnimation hurtAnimation;
+    public SpriteAnimation runAnimation;
+    public SpriteAnimation attackAnimation;
+    public SpriteAnimation hurtAnimation;
     private Battle battle;
     private static final int GROUND_LEVEL_Y = 245;
-    private SpriteAnimation EnemyWalkAnimation;
-    private SpriteAnimation deathAnimation;
+    public SpriteAnimation EnemyWalkAnimation;
+    public SpriteAnimation deathAnimation;
     private HashMap<String, CharacterAnimation> enemyAnimations;
-
-    public CharacterAnimation(SpriteAnimation animation, JLayeredPane layeredPane, LifeQuestUI ui) {
+    private int yOffset = 0; 
+    public CharacterAnimation(SpriteAnimation animation, JLayeredPane layeredPane, LifeQuestUI ui, HashMap<String, CharacterAnimation> enemyAnimations) {
         this.animation = animation;
         this.layeredPane = layeredPane;
         this.ui = ui;
-        this.x = animation.getX();
-        this.y = GROUND_LEVEL_Y;
+        if (animation != null) {
+            this.x = animation.getX();
+            this.y = GROUND_LEVEL_Y;
+        } else {
+            this.x = 350; 
+            this.y = GROUND_LEVEL_Y;
+        }
         isRunning = false;
         isAttacking = false;
         battle = ui.getBattle();
-        this.enemyAnimations = ui.getEnemyGenerator().getEnemyAnimations();
-
+        this.enemyAnimations = enemyAnimations; 
     }
     public SpriteAnimation getCurrentAnimation() {
-        return animation; // Return the current animation (idle or attack)
+        return animation; 
     }
     public void startAnimation() {
         animation.setBounds(x, GROUND_LEVEL_Y, animation.getIcon().getIconWidth(), animation.getIcon().getIconHeight());
         animation.startAnimation();
         layeredPane.add(animation, JLayeredPane.PALETTE_LAYER);
-    }
-
+    } 
     public void setRunAnimation(SpriteAnimation runAnimation) {
         this.runAnimation = runAnimation;
-    }
-
+    } 
     public void setAttackAnimation(SpriteAnimation attackAnimation) {
         this.attackAnimation = attackAnimation;
     }
@@ -66,14 +68,12 @@ public class CharacterAnimation {
         if (!isRunning && runAnimation != null) {
             isRunning = true;
             animation.stopAnimation();
-            layeredPane.remove(animation);
-
+            layeredPane.remove(animation); 
             runAnimation.setBounds(x, GROUND_LEVEL_Y, runAnimation.getIcon().getIconWidth(), runAnimation.getIcon().getIconHeight());
             layeredPane.add(runAnimation, JLayeredPane.PALETTE_LAYER);
             layeredPane.revalidate();
             layeredPane.repaint();
-            runAnimation.startAnimation();
-
+            runAnimation.startAnimation(); 
             int playerSpeed = 5;
             Timer moveTimer = new Timer();
             TimerTask moveTask = new TimerTask() {
@@ -90,31 +90,28 @@ public class CharacterAnimation {
             };
             moveTimer.scheduleAtFixedRate(moveTask, 0, 30);
         }
-    }
-
+    } 
     public void startAttackAnimation() {
         if (!isAttacking && attackAnimation != null) {
             isAttacking = true;
             runAnimation.stopAnimation();
-            layeredPane.remove(runAnimation);
-
+            layeredPane.remove(runAnimation); 
             attackAnimation.setBounds(runAnimation.getX(), GROUND_LEVEL_Y, attackAnimation.getIcon().getIconWidth(), attackAnimation.getIcon().getIconHeight());
             layeredPane.add(attackAnimation, JLayeredPane.PALETTE_LAYER);
             layeredPane.revalidate();
             layeredPane.repaint();
-            attackAnimation.startAnimation();
-
+            attackAnimation.startAnimation(); 
             Timer attackTimer = new Timer();
             TimerTask attackTask = new TimerTask() {
                 int attackFrameCount = 0;
                 @Override
                 public void run() {
                     if (attackFrameCount >= attackAnimation.frames.size()) {
-                        attackTimer.cancel(); // Cancel the TimerTask and Timer
+                        attackTimer.cancel(); 
                         resetToIdleAnimation();
-                        if (ui.getBattle() != null) { // Check if battle is still ongoing
+                        if (ui.getBattle() != null) { 
                             ui.getBattle().playerTurn();
-                            SwingUtilities.invokeLater(() -> ui.updateEnemyInfoBox(ui.getBattle().getEnemy()));
+                            SwingUtilities.invokeLater(() -> ui.updateEnemyInfoBox(ui.getBattle().getEnemyData()));
                         }
                     }
                     attackFrameCount++;
@@ -140,24 +137,24 @@ public class CharacterAnimation {
         animation.startAnimation();
     }
     public void startEnemyWalkAnimation(int targetX) {
-        if (!isRunning && enemyAnimations.get(ui.getBattle().getEnemy().getName()).animation != null) {  // Access walk animation from map
+        if (!isRunning && EnemyWalkAnimation != null) {
             isRunning = true;
             animation.stopAnimation();
-            layeredPane.remove(animation);
-
-            SpriteAnimation walkAnimation = (SpriteAnimation) enemyAnimations.get(ui.getBattle().getEnemy().getName()).animation;
+            layeredPane.remove(animation); 
+            String enemyName = (String) ui.getBattle().getEnemyData().get("name");
+            CharacterAnimation currentEnemyAnimation = enemyAnimations.get(enemyName);
+            SpriteAnimation walkAnimation = currentEnemyAnimation.EnemyWalkAnimation; 
             walkAnimation.setBounds(animation.getX(), animation.getY(), walkAnimation.getIcon().getIconWidth(), walkAnimation.getIcon().getIconHeight());
             layeredPane.add(walkAnimation, JLayeredPane.PALETTE_LAYER);
             layeredPane.revalidate();
             layeredPane.repaint();
-            walkAnimation.startAnimation();
-
+            walkAnimation.startAnimation(); 
             int enemySpeed = 4;
             Timer moveTimer = new Timer();
             TimerTask moveTask = new TimerTask() {
                 @Override
                 public void run() {
-                    int currentX = walkAnimation.getX(); // Use walkAnimation for position
+                    int currentX = walkAnimation.getX(); 
                     if (currentX > targetX) {
                         walkAnimation.setLocation(currentX - enemySpeed, y);
                     } else {
@@ -180,30 +177,26 @@ public class CharacterAnimation {
                     animation.stopAnimation();
                     layeredPane.remove(animation);
                     hurtAnimation.setBounds(animation.getX(), animation.getY(), hurtAnimation.getIcon().getIconWidth(), hurtAnimation.getIcon().getIconHeight());
-                    layeredPane.add(hurtAnimation, JLayeredPane.PALETTE_LAYER);
-
+                    layeredPane.add(hurtAnimation, JLayeredPane.PALETTE_LAYER); 
                     if (!layeredPane.isAncestorOf(hurtAnimation)) {
                         hurtAnimation.setBounds(animation.getX(), animation.getY(), hurtAnimation.getIcon().getIconWidth(), hurtAnimation.getIcon().getIconHeight());
                         layeredPane.add(hurtAnimation, JLayeredPane.PALETTE_LAYER);
                     }
-                    hurtAnimation.startAnimation();
-
-                    // Timer for the hurt animation duration
+                    hurtAnimation.startAnimation(); 
+ 
                     Timer hurtTimer = new Timer();
                     TimerTask hurtTask = new TimerTask() {
-                        int hurtFrameCount = 0;
-
+                        int hurtFrameCount = 0; 
                         @Override
                         public void run() {
                             if (hurtFrameCount >= hurtAnimation.frames.size()) {
                                 hurtTimer.cancel();
-                                resetToIdleAnimation(); // Return to idle after the hurt animation
+                                resetToIdleAnimation(); 
                             }
                             hurtFrameCount++;
                         }
-                    };
-
-                    hurtTimer.scheduleAtFixedRate(hurtTask, 0, 100); // Adjust timing as needed
+                    }; 
+                    hurtTimer.scheduleAtFixedRate(hurtTask, 0, 100); 
                 }
             }
         };
@@ -215,9 +208,8 @@ public class CharacterAnimation {
             layeredPane.remove(animation);
             deathAnimation.setBounds(animation.getX(), animation.getY(), deathAnimation.getIcon().getIconWidth(), deathAnimation.getIcon().getIconHeight());
             layeredPane.add(deathAnimation, JLayeredPane.PALETTE_LAYER);
-            deathAnimation.startAnimation();
-
-            // Timer to remove the death animation after it finishes
+            deathAnimation.startAnimation(); 
+ 
             Timer deathTimer = new Timer();
             TimerTask deathTask = new TimerTask() {
                 @Override
@@ -228,7 +220,7 @@ public class CharacterAnimation {
                     layeredPane.repaint();
                 }
             };
-            deathTimer.schedule(deathTask, deathAnimation.timer.getDelay() * deathAnimation.frames.size()); // Schedule the timer to run once after the animation duration
+            deathTimer.schedule(deathTask, deathAnimation.timer.getDelay() * deathAnimation.frames.size()); 
         }
     }
     public void startEnemyAttackAnimation(int delay) {
@@ -236,64 +228,104 @@ public class CharacterAnimation {
         TimerTask attackDelayTask = new TimerTask() {
             @Override
             public void run() {
-                if (animation != null) {
-                    animation.stopAnimation();
-                    layeredPane.remove(animation);
-
-                    SpriteAnimation attackAnimation = (SpriteAnimation) enemyAnimations.get(ui.getBattle().getEnemy().getName()).attackAnimation;
-                    if (attackAnimation != null && !layeredPane.isAncestorOf(attackAnimation)) {
-                        int xOffset = (animation.getIcon().getIconWidth() - attackAnimation.getIcon().getIconWidth()) / 2;
-                        int yOffset = (animation.getIcon().getIconHeight() - attackAnimation.getIcon().getIconHeight()) / 2;
-
-                        // Access EnemyWalkAnimation from the map
-
-                        SpriteAnimation walkAnimation = (SpriteAnimation) enemyAnimations.get(ui.getBattle().getEnemy().getName()).animation;
-                        attackAnimation.setBounds(
-                                walkAnimation.getX() + xOffset,
-                                walkAnimation.getY() + yOffset,
-                                attackAnimation.getIcon().getIconWidth(),
-                                attackAnimation.getIcon().getIconHeight()
-                        );
-                        layeredPane.add(attackAnimation, JLayeredPane.PALETTE_LAYER);
-                        attackAnimation.startAnimation(); // Start the attack animation
-
-                        Timer attackTimer = new Timer();
-                        TimerTask attackTask = new TimerTask() {
-                            int attackFrameCount = 0;
-                            @Override
-                            public void run() {
-                                if (attackFrameCount >= attackAnimation.frames.size()) {
-                                    attackTimer.cancel();
-                                    resetToIdleAnimation();
+ 
+                String enemyName = (String) ui.getBattle().getEnemyData().get("name");
+                CharacterAnimation currentEnemyAnimation = enemyAnimations.get(enemyName); 
+                if (currentEnemyAnimation != null) {
+                    SpriteAnimation currentAnimation = currentEnemyAnimation.animation;
+                    SpriteAnimation attackAnimation = currentEnemyAnimation.attackAnimation; 
+                    if (currentAnimation != null) {
+                        currentAnimation.stopAnimation();
+                        layeredPane.remove(currentAnimation); 
+                        if (attackAnimation != null && !layeredPane.isAncestorOf(attackAnimation)) {
+                            int xOffset = (currentAnimation.getIcon().getIconWidth() - attackAnimation.getIcon().getIconWidth()) / 2;
+                            int yOffset = (currentAnimation.getIcon().getIconHeight() - attackAnimation.getIcon().getIconHeight()) / 2; 
+                            SpriteAnimation walkAnimation = currentEnemyAnimation.EnemyWalkAnimation; 
+                            attackAnimation.setBounds(
+                                    walkAnimation.getX() + xOffset,
+                                    walkAnimation.getY() + yOffset,
+                                    attackAnimation.getIcon().getIconWidth(),
+                                    attackAnimation.getIcon().getIconHeight()
+                            );
+                            layeredPane.add(attackAnimation, JLayeredPane.PALETTE_LAYER);
+                            attackAnimation.startAnimation();  
+                            Timer attackTimer = new Timer();
+                            TimerTask attackTask = new TimerTask() {
+                                int attackFrameCount = 0; 
+                                @Override
+                                public void run() {
+                                    if (attackFrameCount >= attackAnimation.frames.size()) {
+                                        attackTimer.cancel();
+                                        currentEnemyAnimation.resetToIdleAnimation(); 
+                                    }
+                                    attackFrameCount++;
                                 }
-                                attackFrameCount++;
-                            }
-                        };
-                        attackTimer.scheduleAtFixedRate(attackTask, 0, 100);
+                            }; 
+                            attackTimer.scheduleAtFixedRate(attackTask, 0, 100);
+                        }
                     }
                 }
             }
         };
         attackDelayTimer.schedule(attackDelayTask, delay);
     }
-    public void startEnemyAnimation(int x, int y, int offsetX, int offsetY) {
-        animation.setBounds(x + offsetX, y + offsetY, animation.getIcon().getIconWidth(), animation.getIcon().getIconHeight());
+    public void startEnemyAnimation(int x, int y) {
+        animation.setBounds(x, y + yOffset, animation.getIcon().getIconWidth(), animation.getIcon().getIconHeight());
         animation.startAnimation();
         layeredPane.add(animation, JLayeredPane.PALETTE_LAYER);
-    }
-
+    } 
     public int getX() {
         return x;
-    }
-
+    } 
     public int getY() {
         return y;
     }
     public int getEnemyX() {
-        return animation.getX();  // Get x-coordinate of the current animation
-    }
-
+        return animation.getX(); 
+    } 
     public int getEnemyY() {
-        return animation.getY();  // Get y-coordinate of the current animation
+        return animation.getY(); 
+    } 
+    public void setEnemyWalkAnimation(String gifPath, int delay, double scaleFactor) {
+        this.EnemyWalkAnimation = new SpriteAnimation(gifPath, delay, scaleFactor);
+    } 
+    public void setAttackAnimation(String gifPath, int delay, double scaleFactor) {
+        this.attackAnimation = new SpriteAnimation(gifPath, delay, scaleFactor);
+    } 
+    public void setHurtAnimation(String gifPath, int delay, double scaleFactor) {
+        this.hurtAnimation = new SpriteAnimation(gifPath, delay, scaleFactor);
+    } 
+    public void setDeathAnimation(String gifPath, int delay, double scaleFactor) {
+        this.deathAnimation = new SpriteAnimation(gifPath, delay, scaleFactor);
+    }
+    public void setYOffset(int offset) {
+        this.yOffset = offset;
+    } 
+    public int getYOffset() {
+        return yOffset;
+    }
+    public void playRunAnimationLoop() {
+        if (!isRunning && runAnimation != null) {
+            isRunning = true;
+            animation.stopAnimation();
+            layeredPane.remove(animation);
+
+            runAnimation.setBounds(x, GROUND_LEVEL_Y, runAnimation.getIcon().getIconWidth(), runAnimation.getIcon().getIconHeight());
+            layeredPane.add(runAnimation, JLayeredPane.PALETTE_LAYER);
+            layeredPane.revalidate();
+            layeredPane.repaint();
+            runAnimation.startAnimation();
+        }
+    }
+    public void stopRunAnimation() {
+        if (isRunning && runAnimation != null) {
+            isRunning = false; // Reset the flag
+            runAnimation.stopAnimation();
+            layeredPane.remove(runAnimation); // Remove from the layered pane
+            layeredPane.add(animation, JLayeredPane.PALETTE_LAYER); // Add back the idle animation
+            animation.startAnimation();
+            layeredPane.revalidate();
+            layeredPane.repaint();
+        }
     }
 }

@@ -1,11 +1,10 @@
 import javax.swing.*;
 import java.awt.*;
-
+import java.util.Map; 
 public class EnemyInfoBox extends JPanel {
     private JLabel nameLabel;
     private JProgressBar healthBar;
-    private JLabel levelLabel;
-
+    private JLabel levelLabel; 
     public EnemyInfoBox() {
         setLayout(new GridLayout(3, 1)); 
         nameLabel = new JLabel();
@@ -17,17 +16,18 @@ public class EnemyInfoBox extends JPanel {
         add(healthBar);
         add(levelLabel);
     }
-    public void updateInfo(Enemy enemy) {
-        if (enemy != null){
-            nameLabel.setText(enemy.getName());
-            healthBar.setValue((int) (((double) enemy.getHealth() / enemy.getMaxHealth()) * 100));
-            healthBar.setString(enemy.getHealth() + "%");
-            levelLabel.setText("Level " + enemy.getLevel());
+    public void updateInfo(Map<String, Object> enemyData) {
+        if (enemyData != null) {
+            nameLabel.setText((String) enemyData.get("name"));
+            int currentHealth = (int) enemyData.get("health");
+            int maxHealth = (int) enemyData.get("maxHealth");
+            healthBar.setValue((int) (((double) currentHealth / maxHealth) * 100));
+            healthBar.setString(currentHealth + " / " + maxHealth);
+            levelLabel.setText("Level " + enemyData.get("level"));
         } else {
- 
             nameLabel.setText("Enemy: Unknown");
-            healthBar.setString("1000%");
+            healthBar.setValue(100); 
+            healthBar.setString("???");
         }
-
     }
 }
